@@ -667,6 +667,7 @@ impl Index<PlaneBlockOffset> for FrameBlocks {
   }
 }
 
+
 impl IndexMut<PlaneBlockOffset> for FrameBlocks {
   #[inline]
   fn index_mut(&mut self, bo: PlaneBlockOffset) -> &mut Self::Output {
@@ -674,7 +675,35 @@ impl IndexMut<PlaneBlockOffset> for FrameBlocks {
   }
 }
 
+fn subquantize_angle(angle: i8) -> i8 {
+  let mut sub_angle = angle;
+  if sub_angle == 1 {
+    sub_angle = 0;
+  };
+
+  if sub_angle == 3 {
+    sub_angle = 2;
+  };
+
+  return sub_angle;
+}
+
 impl<'a> ContextWriter<'a> {
+  #[inline]
+  pub fn write_angle_delta<W: Writer>(
+    &mut self, w: &mut W, angle: i8, mode: PredictionMode,
+  ) {
+    let abs_angle: u32 = (subquantize_angle(angle) + MAX_ANGLE_DELTA as i8) as u32;
+
+    symbol_with_update!(
+      self,
+      w,
+      abs_angle,
+      &mut self.fc.angle_delta_cdf
+        [mode as usize - PredictionMode::V_PRED as usize]
+    );
+  }
+
   pub fn get_cdf_intra_mode_kf(
     &self, bo: TileBlockOffset,
   ) -> &[u16; INTRA_MODES] {
@@ -743,18 +772,6 @@ impl<'a> ContextWriter<'a> {
     }
   }
 
-  #[inline]
-  pub fn write_angle_delta<W: Writer>(
-    &mut self, w: &mut W, angle: i8, mode: PredictionMode,
-  ) {
-    symbol_with_update!(
-      self,
-      w,
-      (angle + MAX_ANGLE_DELTA as i8) as u32,
-      &mut self.fc.angle_delta_cdf
-        [mode as usize - PredictionMode::V_PRED as usize]
-    );
-  }
 
   pub fn write_use_filter_intra<W: Writer>(
     &mut self, w: &mut W, enable: bool, block_size: BlockSize,
