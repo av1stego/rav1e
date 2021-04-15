@@ -37,6 +37,8 @@ use crate::transform::*;
 use crate::util::*;
 use crate::wasm_bindgen::*;
 
+use crate::hidden_info::HiddenInformationContainer;
+
 use arg_enum_proc_macro::ArgEnum;
 use arrayvec::*;
 use bitstream_io::{BigEndian, BitWrite, BitWriter};
@@ -3203,8 +3205,11 @@ fn encode_tile<'a, T: Pixel>(
   let planes =
     if fi.sequence.chroma_sampling == ChromaSampling::Cs400 { 1 } else { 3 };
 
+  // let hidden_data: [u8; 4] = [0, 1, 1, 0];
+  let hic = HiddenInformationContainer::new(&[0, 1, 1, 0]);
+
   let bc = BlockContext::new(blocks);
-  let mut cw = ContextWriter::new(fc, bc);
+  let mut cw = ContextWriter::new(fc, bc, hic);
   let mut sbs_q: VecDeque<SBSQueueEntry> = VecDeque::new();
   let mut last_lru_ready = [-1; 3];
   let mut last_lru_rdoed = [-1; 3];

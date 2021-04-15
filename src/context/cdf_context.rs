@@ -9,6 +9,8 @@
 
 use super::*;
 
+use crate::hidden_info::*;
+
 pub const CDF_LEN_MAX: usize = 16;
 
 #[derive(Clone)]
@@ -693,11 +695,13 @@ pub struct ContextWriter<'a> {
   pub fc_log: CDFContextLog,
   #[cfg(feature = "desync_finder")]
   pub fc_map: Option<FieldMap>, // For debugging purposes
+
+  pub hidden_info_container: HiddenInformationContainer<'a>
 }
 
 impl<'a> ContextWriter<'a> {
   #[allow(clippy::let_and_return)]
-  pub fn new(fc: &'a mut CDFContext, bc: BlockContext<'a>) -> Self {
+  pub fn new(fc: &'a mut CDFContext, bc: BlockContext<'a>, hidden_info_container: HiddenInformationContainer<'a>) -> Self {
     let fc_log = CDFContextLog::new(fc);
     #[allow(unused_mut)]
     let mut cw = ContextWriter {
@@ -706,6 +710,7 @@ impl<'a> ContextWriter<'a> {
       fc_log,
       #[cfg(feature = "desync_finder")]
       fc_map: Default::default(),
+      hidden_info_container 
     };
     #[cfg(feature = "desync_finder")]
     {

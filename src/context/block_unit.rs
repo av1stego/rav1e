@@ -675,23 +675,17 @@ impl IndexMut<PlaneBlockOffset> for FrameBlocks {
   }
 }
 
-fn subquantize_angle(angle: i8) -> i8 {
-  let sub_angle = (angle / 2) * 2;
-  return sub_angle;
-}
-
 impl<'a> ContextWriter<'a> {
   #[inline]
   pub fn write_angle_delta<W: Writer>(
     &mut self, w: &mut W, angle: i8, mode: PredictionMode,
   ) {
-    let sub_angle = subquantize_angle(angle);
-    let abs_angle: u32 = (sub_angle + MAX_ANGLE_DELTA as i8) as u32;
+    let angle = self.hidden_info_container.inject_in_angle(angle);
 
     symbol_with_update!(
       self,
       w,
-      abs_angle,
+      (angle + MAX_ANGLE_DELTA as i8) as u32,
       &mut self.fc.angle_delta_cdf
         [mode as usize - PredictionMode::V_PRED as usize]
     );
