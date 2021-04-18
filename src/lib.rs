@@ -241,7 +241,7 @@ mod api;
 mod frame;
 mod header;
 
-mod hidden_info;
+pub mod hidden_info;
 
 use crate::encoder::*;
 

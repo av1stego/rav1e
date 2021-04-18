@@ -8,7 +8,7 @@
 // PATENTS file, you can obtain it at www.aomedia.org/license/patent.
 #![deny(missing_docs)]
 
-use crate::activity::ActivityMask;
+use crate::{activity::ActivityMask, hidden_info::HiddenInformationContainer};
 use crate::api::lookahead::*;
 use crate::api::{EncoderConfig, EncoderStatus, FrameType, Opaque, Packet};
 use crate::color::ChromaSampling::Cs400;
@@ -223,7 +223,7 @@ type FrameQueue<T> = BTreeMap<u64, Option<Arc<Frame<T>>>>;
 type FrameDataQueue<T> = BTreeMap<u64, FrameData<T>>;
 
 // the fields pub(super) are accessed only by the tests
-pub(crate) struct ContextInner<T: Pixel> {
+pub(crate) struct ContextInner<'a, T: Pixel> {
   pub(crate) frame_count: u64,
   pub(crate) limit: Option<u64>,
   pub(crate) output_frameno: u64,
@@ -257,10 +257,12 @@ pub(crate) struct ContextInner<T: Pixel> {
   next_lookahead_output_frameno: u64,
   /// Optional opaque to be sent back to the user
   opaque_q: BTreeMap<u64, Opaque>,
+
+  pub(crate) hic: &'a mut HiddenInformationContainer
 }
 
-impl<T: Pixel> ContextInner<T> {
-  pub fn new(enc: &EncoderConfig) -> Self {
+impl<'a, T: Pixel> ContextInner<'a, T> {
+  pub fn new(enc: &EncoderConfig, hic: &'a mut HiddenInformationContainer) -> Self {
     // initialize with temporal delimiter
     let packet_data = TEMPORAL_DELIMITER.to_vec();
     let mut keyframes = BTreeSet::new();
@@ -310,6 +312,7 @@ impl<T: Pixel> ContextInner<T> {
       next_lookahead_frame: 1,
       next_lookahead_output_frameno: 0,
       opaque_q: BTreeMap::new(),
+      hic
     }
   }
 
@@ -1166,7 +1169,7 @@ impl<T: Pixel> ContextInner<T> {
       if self.rc_state.needs_trial_encode(fti) {
         let mut trial_fs = frame_data.fs.clone();
         let data =
-          encode_frame(&frame_data.fi, &mut trial_fs, &self.inter_cfg);
+          encode_frame(&frame_data.fi, &mut trial_fs, &self.inter_cfg, self.hic);
         self.rc_state.update_state(
           (data.len() * 8) as i64,
           fti,
@@ -1185,7 +1188,7 @@ impl<T: Pixel> ContextInner<T> {
       }
 
       let data =
-        encode_frame(&frame_data.fi, &mut frame_data.fs, &self.inter_cfg);
+        encode_frame(&frame_data.fi, &mut frame_data.fs, &self.inter_cfg, self.hic);
       let enc_stats = frame_data.fs.enc_stats.clone();
       self.maybe_prev_log_base_q = Some(qps.log_base_q);
       // TODO: Add support for dropping frames.

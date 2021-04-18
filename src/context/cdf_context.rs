@@ -696,12 +696,12 @@ pub struct ContextWriter<'a> {
   #[cfg(feature = "desync_finder")]
   pub fc_map: Option<FieldMap>, // For debugging purposes
 
-  pub hidden_info_container: HiddenInformationContainer<'a>
+  pub hidden_info_container: &'a mut HiddenInformationContainer
 }
 
 impl<'a> ContextWriter<'a> {
   #[allow(clippy::let_and_return)]
-  pub fn new(fc: &'a mut CDFContext, bc: BlockContext<'a>, hidden_info_container: HiddenInformationContainer<'a>) -> Self {
+  pub fn new(fc: &'a mut CDFContext, bc: BlockContext<'a>, hidden_info_container: &'a mut HiddenInformationContainer) -> Self {
     let fc_log = CDFContextLog::new(fc);
     #[allow(unused_mut)]
     let mut cw = ContextWriter {

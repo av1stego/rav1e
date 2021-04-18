@@ -46,11 +46,14 @@ use rav1e::prelude::*;
 
 use crate::decoder::{Decoder, FrameBuilder, VideoDetails};
 use crate::muxer::*;
+
+use rav1e::hidden_info::HiddenInformationContainer;
+
 use std::fs::File;
 use std::io::{Read, Seek, Write};
 use std::sync::Arc;
 
-impl<T: Pixel> FrameBuilder<T> for Context<T> {
+impl<'a, T: Pixel> FrameBuilder<T> for Context<'a, T> {
   fn new_frame(&self) -> Frame<T> {
     Context::new_frame(self)
   }
@@ -243,8 +246,10 @@ fn do_encode<T: Pixel, D: Decoder>(
   mut y4m_enc: Option<y4m::Encoder<Box<dyn Write + Send>>>,
   metrics_enabled: MetricsEnabled,
 ) -> Result<(), CliError> {
+  let mut hic: HiddenInformationContainer = HiddenInformationContainer::new(vec![0, 0, 1, 1]);
+
   let mut ctx: Context<T> =
-    cfg.new_context().map_err(|e| e.context("Invalid encoder settings"))?;
+    cfg.new_context(&mut hic).map_err(|e| e.context("Invalid encoder settings"))?;
 
   // Let's write down a placeholder.
   if let Some(passfile) = pass1file.as_mut() {

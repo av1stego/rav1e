@@ -49,7 +49,6 @@ use std::mem::MaybeUninit;
 use std::sync::Arc;
 use std::{fmt, io, mem};
 
-use crate::rayon::iter::*;
 use rust_hawktracer::*;
 
 #[allow(dead_code)]
@@ -2967,6 +2966,7 @@ fn get_initial_cdfcontext<T: Pixel>(fi: &FrameInvariants<T>) -> CDFContext {
 #[hawktracer(encode_tile_group)]
 fn encode_tile_group<T: Pixel>(
   fi: &FrameInvariants<T>, fs: &mut FrameState<T>, inter_cfg: &InterConfig,
+  hic: &mut HiddenInformationContainer
 ) -> Vec<u8> {
   let planes =
     if fi.sequence.chroma_sampling == ChromaSampling::Cs400 { 1 } else { 3 };
@@ -2981,9 +2981,10 @@ fn encode_tile_group<T: Pixel>(
     .tile_iter_mut(fs, &mut blocks)
     .zip(cdfs.iter_mut())
     .collect::<Vec<_>>()
-    .into_par_iter()
+    // .into_par_iter()
+    .into_iter()
     .map(|(mut ctx, cdf)| {
-      let raw = encode_tile(fi, &mut ctx.ts, cdf, &mut ctx.tb, inter_cfg);
+      let raw = encode_tile(fi, &mut ctx.ts, cdf, &mut ctx.tb, inter_cfg, hic);
       (raw, ctx.ts)
     })
     .unzip();
@@ -3199,14 +3200,11 @@ fn check_lf_queue<T: Pixel>(
 fn encode_tile<'a, T: Pixel>(
   fi: &FrameInvariants<T>, ts: &mut TileStateMut<'_, T>,
   fc: &'a mut CDFContext, blocks: &'a mut TileBlocksMut<'a>,
-  inter_cfg: &InterConfig,
+  inter_cfg: &InterConfig, hic: &'a mut HiddenInformationContainer
 ) -> Vec<u8> {
   let mut w = WriterEncoder::new();
   let planes =
     if fi.sequence.chroma_sampling == ChromaSampling::Cs400 { 1 } else { 3 };
-
-  // let hidden_data: [u8; 4] = [0, 1, 1, 0];
-  let hic = HiddenInformationContainer::new(&[0, 1, 1, 0]);
 
   let bc = BlockContext::new(blocks);
   let mut cw = ContextWriter::new(fc, bc, hic);
@@ -3481,6 +3479,7 @@ fn get_initial_segmentation<T: Pixel>(
 
 pub fn encode_frame<T: Pixel>(
   fi: &FrameInvariants<T>, fs: &mut FrameState<T>, inter_cfg: &InterConfig,
+  hic: &mut HiddenInformationContainer
 ) -> Vec<u8> {
   debug_assert!(!fi.show_existing_frame);
   debug_assert!(!fi.invalid);
@@ -3492,7 +3491,7 @@ pub fn encode_frame<T: Pixel>(
     fs.segmentation = get_initial_segmentation(fi);
     segmentation_optimize(fi, fs);
   }
-  let tile_group = encode_tile_group(fi, fs, inter_cfg);
+  let tile_group = encode_tile_group(fi, fs, inter_cfg, hic);
 
   if fi.frame_type == FrameType::KEY {
     write_key_frame_obus(&mut packet, fi, obu_extension).unwrap();

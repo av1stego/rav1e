@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use std::sync::Arc;
 
-use crate::api::{ChromaSampling, Context, ContextInner, PixelRange};
+use crate::{api::{ChromaSampling, Context, ContextInner, PixelRange}, hidden_info::HiddenInformationContainer};
 use crate::rayon::{ThreadPool, ThreadPoolBuilder};
 use crate::util::Pixel;
 
@@ -167,6 +167,13 @@ impl Config {
     self
   }
 
+  /// Set the hidden information container
+  ///
+  /*pub fn with_hidden_information_container(mut self, hic: HiddenInformationContainer) -> Self {
+    self.hic = hic;
+    self
+  }*/
+
   #[cfg(feature = "unstable")]
   /// Use the provided threadpool
   ///
@@ -188,9 +195,9 @@ fn check_tile_log2(n: usize) -> bool {
 }
 
 impl Config {
-  pub(crate) fn new_inner<T: Pixel>(
-    &self,
-  ) -> Result<ContextInner<T>, InvalidConfig> {
+  pub(crate) fn new_inner<'a, T: Pixel>(
+    &self, hic: &'a mut HiddenInformationContainer
+  ) -> Result<ContextInner<'a, T>, InvalidConfig> {
     assert!(
       8 * std::mem::size_of::<T>() >= self.enc.bit_depth,
       "The Pixel u{} does not match the Config bit_depth {}",
@@ -214,7 +221,7 @@ impl Config {
       config.speed_settings.rdo_tx_decision = false;
     }
 
-    let mut inner = ContextInner::new(&config);
+    let mut inner = ContextInner::new(&config, hic);
 
     if self.rate_control.emit_pass_data {
       let params = inner.rc_state.get_twopass_out_params(&inner, 0);
@@ -258,8 +265,8 @@ impl Config {
   /// ```
   ///
   /// [`Context`]: struct.Context.html
-  pub fn new_context<T: Pixel>(&self) -> Result<Context<T>, InvalidConfig> {
-    let inner = self.new_inner()?;
+  pub fn new_context<'a, T: Pixel>(&self, hic: &'a mut HiddenInformationContainer) -> Result<Context<'a, T>, InvalidConfig> {
+    let inner = self.new_inner(hic)?;
     let config = *inner.config;
     let pool = self.new_thread_pool();
 

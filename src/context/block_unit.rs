@@ -680,12 +680,13 @@ impl<'a> ContextWriter<'a> {
   pub fn write_angle_delta<W: Writer>(
     &mut self, w: &mut W, angle: i8, mode: PredictionMode,
   ) {
-    let angle = self.hidden_info_container.inject_in_angle(angle);
+    let abs_angle = (angle + MAX_ANGLE_DELTA as i8) as u32;
+    let injected_angle = self.hidden_info_container.inject_in_angle(abs_angle);
 
     symbol_with_update!(
       self,
       w,
-      (angle + MAX_ANGLE_DELTA as i8) as u32,
+      injected_angle,
       &mut self.fc.angle_delta_cdf
         [mode as usize - PredictionMode::V_PRED as usize]
     );
