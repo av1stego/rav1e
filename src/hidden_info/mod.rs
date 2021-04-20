@@ -3,7 +3,8 @@ use std::fmt::Debug;
 pub struct HiddenInformationContainer<> {
     pub data: Vec<u8>,
     enabled: bool,
-    current_byte_index: usize
+    current_byte_index: usize,
+    current_bit_index: usize,
 }
 
 impl Default for HiddenInformationContainer {
@@ -11,7 +12,8 @@ impl Default for HiddenInformationContainer {
         Self {
             data: vec![],
             enabled: false,
-            current_byte_index: 0
+            current_byte_index: 0,
+            current_bit_index: 0,
         }
     }
 }
@@ -21,7 +23,8 @@ impl Clone for HiddenInformationContainer {
         Self {
             data: self.data.clone(),
             enabled: self.enabled,
-            current_byte_index: self.current_byte_index
+            current_byte_index: self.current_byte_index,
+            current_bit_index: self.current_bit_index
         }
     }
 }
@@ -37,7 +40,17 @@ impl HiddenInformationContainer {
         HiddenInformationContainer {
             data: data,
             enabled: false,
-            current_byte_index: 0
+            current_byte_index: 0,
+            current_bit_index: 0,
+        }
+    }
+
+    pub fn new_from_str(string: String) -> Self {
+        HiddenInformationContainer {
+            data: string.into_bytes(),
+            enabled: false,
+            current_byte_index: 0,
+            current_bit_index: 0,
         }
     }
 
@@ -56,23 +69,26 @@ impl HiddenInformationContainer {
 
         if angle == 6 {
             // println!("Angle is 6, skipping space");
-            println!("{}", angle);
+            return angle;
+        }
+
+        if self.current_byte_index >= self.data.len() {
+            println!("All data were trasmitted");
             return angle;
         }
 
         let sub_angle = (angle / 2) * 2;
 
-        /*let injected_value: i8 = self.data[self.current_byte_index] as i8;
-        self.current_byte_index += 1;
-        if self.current_byte_index >= self.data.len() {
-            self.current_byte_index = 0;
-        }*/
-        let injected_value = 1;
+        let injected_value: u32 = ((self.data[self.current_byte_index] as u32) >> self.current_bit_index) & 1;
+        self.current_bit_index += 1;
+        if self.current_bit_index == 8 {
+            self.current_byte_index += 1;
+            self.current_bit_index = 0;
+        }
 
         let new_angle = sub_angle + injected_value;
 
-        // println!("Angle: {}, new angle: {}, injected value: {}", angle, new_angle, injected_value);
-        println!("{}", new_angle);
+        println!("Angle: {}, new angle: {}, injected value => {}", angle, new_angle, injected_value);
 
         new_angle
     }
