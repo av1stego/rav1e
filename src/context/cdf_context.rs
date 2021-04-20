@@ -722,6 +722,10 @@ impl<'a> ContextWriter<'a> {
     cw
   }
 
+  pub fn get_hidden_information_container(&mut self) -> &mut HiddenInformationContainer {
+    self.hidden_info_container
+  }
+
   pub fn cdf_element_prob(cdf: &[u16], element: usize) -> u16 {
     (if element > 0 { cdf[element - 1] } else { 32768 })
       - (if element + 1 < cdf.len() { cdf[element] } else { 0 })

@@ -2854,6 +2854,7 @@ fn encode_partition_topdown<T: Pixel, W: Writer>(
         tile_bo,
         skip,
       );
+      cw.get_hidden_information_container().enable();
       encode_block_post_cdef(
         fi,
         ts,
@@ -2876,6 +2877,7 @@ fn encode_partition_topdown<T: Pixel, W: Writer>(
         true,
         true,
       );
+      cw.get_hidden_information_container().disable();
     }
     PARTITION_SPLIT | PARTITION_HORZ | PARTITION_VERT => {
       if !rdo_output.part_modes.is_empty() {
