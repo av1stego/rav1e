@@ -47,6 +47,7 @@ pub struct CliOptions {
   pub pass1file_name: Option<String>,
   pub pass2file_name: Option<String>,
   pub save_config: Option<String>,
+  pub hidden_string: Option<String>,
 }
 
 #[cfg(feature = "serialize")]
@@ -369,6 +370,12 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
         .help("Overwrite output file.")
         .short("y")
     )
+    .arg(
+      Arg::with_name("HIDDEN_STRING")
+        .help("Add hidden information into the video")
+        .long("hidden-string")
+        .takes_value(true)
+    )
     .subcommand(SubCommand::with_name("advanced")
                 .setting(AppSettings::Hidden)
                 .about("Advanced features")
@@ -486,6 +493,9 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
     panic!("A limit cannot be set above 1 in still picture mode");
   }
 
+  let hidden_string = matches.value_of("HIDDEN_STRING").map(
+    |string| String::from(string));
+
   Ok(CliOptions {
     io,
     enc,
@@ -502,6 +512,7 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
     pass1file_name: matches.value_of("FIRST_PASS").map(|s| s.to_owned()),
     pass2file_name: matches.value_of("SECOND_PASS").map(|s| s.to_owned()),
     save_config,
+    hidden_string
   })
 }
 

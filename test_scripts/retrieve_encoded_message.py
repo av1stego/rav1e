@@ -21,6 +21,8 @@ def retrieve_bits_from_lines(lines):
         bit = int(line.split(" ")[8])
         bits.append(bit)
 
+    return bits
+
 def main():
     lines = open(sys.argv[1]).readlines()
     bits = retrieve_bits_from_lines(lines)

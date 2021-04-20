@@ -244,10 +244,14 @@ fn do_encode<T: Pixel, D: Decoder>(
   output: &mut dyn Muxer, mut source: Source<D>, mut pass1file: Option<File>,
   mut pass2file: Option<File>,
   mut y4m_enc: Option<y4m::Encoder<Box<dyn Write + Send>>>,
-  metrics_enabled: MetricsEnabled,
+  metrics_enabled: MetricsEnabled, hidden_string: Option<String>,
 ) -> Result<(), CliError> {
-  // TODO: Make this configurable
-  let mut hic: HiddenInformationContainer = HiddenInformationContainer::new_from_str(String::from("test"));
+  let mut hic: HiddenInformationContainer;
+  if hidden_string.is_none() {
+    hic = HiddenInformationContainer::new(vec![]);
+  } else {
+    hic = HiddenInformationContainer::new_from_str(hidden_string.unwrap());
+  }
 
   let mut ctx: Context<T> =
     cfg.new_context(&mut hic).map_err(|e| e.context("Invalid encoder settings"))?;
@@ -555,6 +559,7 @@ fn run() -> Result<(), error::CliError> {
       pass2file,
       y4m_enc,
       cli.metrics_enabled,
+      cli.hidden_string
     )?
   } else {
     do_encode::<u16, y4m::Decoder<Box<dyn Read + Send>>>(
@@ -567,6 +572,7 @@ fn run() -> Result<(), error::CliError> {
       pass2file,
       y4m_enc,
       cli.metrics_enabled,
+      cli.hidden_string
     )?
   }
   if cli.benchmark {
