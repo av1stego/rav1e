@@ -46,8 +46,11 @@ impl HiddenInformationContainer {
     }
 
     pub fn new_from_str(string: String) -> Self {
+        let mut str_bytes = string.into_bytes();
+        str_bytes.push(0b0);
+
         HiddenInformationContainer {
-            data: string.into_bytes(),
+            data: str_bytes,
             enabled: false,
             current_byte_index: 0,
             current_bit_index: 0,

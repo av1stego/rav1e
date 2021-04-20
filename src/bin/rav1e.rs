@@ -246,7 +246,8 @@ fn do_encode<T: Pixel, D: Decoder>(
   mut y4m_enc: Option<y4m::Encoder<Box<dyn Write + Send>>>,
   metrics_enabled: MetricsEnabled,
 ) -> Result<(), CliError> {
-  let mut hic: HiddenInformationContainer = HiddenInformationContainer::new_from_str(String::from("ciao Stefanooh"));
+  // TODO: Make this configurable
+  let mut hic: HiddenInformationContainer = HiddenInformationContainer::new_from_str(String::from("test"));
 
   let mut ctx: Context<T> =
     cfg.new_context(&mut hic).map_err(|e| e.context("Invalid encoder settings"))?;
