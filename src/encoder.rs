@@ -3241,9 +3241,11 @@ fn encode_tile<'a, T: Pixel>(
         tile_bo.0.y + BlockSize::BLOCK_64X64.height_mi() > ts.mi_height;
 
       // Encode SuperBlock
-      if fi.config.speed_settings.encode_bottomup
+      // TODO: Support information hiding during bottomup encoding 
+      if cw.get_hidden_information_container().is_done() &&
+      (fi.config.speed_settings.encode_bottomup
         || is_straddle_sbx
-        || is_straddle_sby
+        || is_straddle_sby)
       {
         encode_partition_bottomup(
           fi,

@@ -65,6 +65,10 @@ impl HiddenInformationContainer {
         self.enabled = false;
     }
 
+    pub fn is_done(&self) -> bool {
+        self.current_byte_index >= self.data.len()
+    }
+
     pub fn inject_in_angle(&mut self, angle: u32) -> u32 {
         if !self.enabled {
             return angle;
@@ -75,7 +79,7 @@ impl HiddenInformationContainer {
             return angle;
         }
 
-        if self.current_byte_index >= self.data.len() {
+        if self.is_done() {
             println!("All data were trasmitted");
             return angle;
         }
