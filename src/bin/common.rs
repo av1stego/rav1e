@@ -48,6 +48,7 @@ pub struct CliOptions {
   pub pass2file_name: Option<String>,
   pub save_config: Option<String>,
   pub hidden_string: Option<String>,
+  pub slots: usize,
 }
 
 #[cfg(feature = "serialize")]
@@ -400,6 +401,17 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
                 )
     );
 
+  if cfg!(feature = "unstable") {
+    app = app.arg(
+      Arg::with_name("SLOTS")
+        .help("Maximum number of GOPs that can be encoded in parallel")
+        .long("parallel_gops")
+        .long("slots")
+        .takes_value(true)
+        .default_value("0"),
+    );
+  }
+
   let matches = app.clone().get_matches();
 
   if matches.is_present("FULLHELP") {
@@ -496,6 +508,12 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
   let hidden_string = matches.value_of("HIDDEN_STRING").map(
     |string| String::from(string));
 
+  let slots = if cfg!(feature = "unstable") {
+    matches.value_of("SLOTS").unwrap().parse().unwrap()
+  } else {
+    0
+  };
+
   Ok(CliOptions {
     io,
     enc,
@@ -512,7 +530,8 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
     pass1file_name: matches.value_of("FIRST_PASS").map(|s| s.to_owned()),
     pass2file_name: matches.value_of("SECOND_PASS").map(|s| s.to_owned()),
     save_config,
-    hidden_string
+    hidden_string,
+    slots,
   })
 }
 

@@ -103,7 +103,6 @@ impl<D: Decoder> Source<D> {
         return false;
       }
     }
-
     match self.input.read_frame(send_frame, &video_info) {
       Ok(frame) => {
         self.count += 1;
@@ -487,7 +486,8 @@ fn run() -> Result<(), error::CliError> {
   let cfg = Config::new()
     .with_encoder_config(cli.enc)
     .with_threads(cli.threads)
-    .with_rate_control(rc);
+    .with_rate_control(rc)
+    .with_parallel_gops(cli.slots);
 
   #[cfg(feature = "serialize")]
   {
