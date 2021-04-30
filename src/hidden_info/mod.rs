@@ -2,7 +2,12 @@ use std::fmt::Debug;
 
 pub struct HiddenInformationContainer<> {
     pub data: Vec<u8>,
-    enabled: bool,
+
+    pre_encoding: bool,
+    booked_byte_index: usize,
+    booked_bit_index: usize,
+
+    final_encoding: bool,
     current_byte_index: usize,
     current_bit_index: usize,
 }
@@ -11,7 +16,13 @@ impl Default for HiddenInformationContainer {
     fn default() -> Self {
         Self {
             data: vec![],
-            enabled: false,
+
+            pre_encoding: false,
+            booked_byte_index: 0,
+            booked_bit_index: 0,
+
+            final_encoding: false,
+
             current_byte_index: 0,
             current_bit_index: 0,
         }
@@ -22,7 +33,10 @@ impl Clone for HiddenInformationContainer {
     fn clone(&self) -> Self {
         Self {
             data: self.data.clone(),
-            enabled: self.enabled,
+            pre_encoding: self.pre_encoding,
+            booked_byte_index: self.booked_byte_index,
+            booked_bit_index: self.booked_bit_index,
+            final_encoding: self.final_encoding,
             current_byte_index: self.current_byte_index,
             current_bit_index: self.current_bit_index
         }
@@ -39,7 +53,10 @@ impl HiddenInformationContainer {
     pub fn new(data: Vec<u8>) -> Self {
         HiddenInformationContainer {
             data: data,
-            enabled: false,
+            pre_encoding: false,
+            booked_byte_index: 0,
+            booked_bit_index: 0,
+            final_encoding: false,
             current_byte_index: 0,
             current_bit_index: 0,
         }
@@ -51,18 +68,40 @@ impl HiddenInformationContainer {
 
         HiddenInformationContainer {
             data: str_bytes,
-            enabled: false,
+            pre_encoding: false,
+            booked_byte_index: 0,
+            booked_bit_index: 0,
+            final_encoding: false,
             current_byte_index: 0,
             current_bit_index: 0,
         }
     }
 
-    pub fn enable(&mut self) {
-        self.enabled = true;
+    pub fn start_pre_encoding(&mut self) {
+        self.booked_byte_index = self.current_byte_index;
+        self.booked_bit_index = self.current_bit_index;
+        self.pre_encoding = true;
     }
 
-    pub fn disable(&mut self) {
-        self.enabled = false;
+    pub fn stop_pre_encoding(&mut self) {
+        assert!(self.pre_encoding);
+
+        self.current_byte_index = self.booked_byte_index;
+        self.current_bit_index = self.booked_bit_index;
+
+        self.pre_encoding = false;
+    }
+
+    pub fn start_final_encoding(&mut self) {
+        self.final_encoding = true;
+    }
+
+    pub fn stop_final_encoding(&mut self) {
+        self.final_encoding = false;
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.pre_encoding || self.final_encoding
     }
 
     pub fn is_done(&self) -> bool {
@@ -70,7 +109,7 @@ impl HiddenInformationContainer {
     }
 
     pub fn inject_in_angle(&mut self, angle: u32) -> u32 {
-        if !self.enabled {
+        if !self.is_enabled() {
             return angle;
         }
 
@@ -80,7 +119,10 @@ impl HiddenInformationContainer {
         }
 
         if self.is_done() {
-            println!("All data were trasmitted");
+            if self.final_encoding {
+                println!("All data were trasmitted");
+            }
+
             return angle;
         }
 
@@ -95,7 +137,9 @@ impl HiddenInformationContainer {
 
         let new_angle = sub_angle + injected_value;
 
-        println!("Angle: {}, new angle: {}, injected value => {}", angle, new_angle, injected_value);
+        if self.final_encoding {
+            println!("Angle: {}, new angle: {}, injected value => {}", angle, new_angle, injected_value);
+        }
 
         new_angle
     }

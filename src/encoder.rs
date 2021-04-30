@@ -2319,6 +2319,7 @@ pub fn encode_block_with_modes<T: Pixel, W: Writer>(
     (mode_decision.tx_size, mode_decision.tx_type)
   };
 
+  // cw.get_hidden_information_container().start_pre_encoding();
   cdef_coded = encode_block_pre_cdef(
     &fi.sequence,
     ts,
@@ -2328,6 +2329,7 @@ pub fn encode_block_with_modes<T: Pixel, W: Writer>(
     tile_bo,
     skip,
   );
+  cw.get_hidden_information_container().start_pre_encoding();
   encode_block_post_cdef(
     fi,
     ts,
@@ -2350,6 +2352,7 @@ pub fn encode_block_with_modes<T: Pixel, W: Writer>(
     true,
     record_stats,
   );
+  cw.get_hidden_information_container().stop_pre_encoding();
 }
 
 fn encode_partition_bottomup<T: Pixel, W: Writer>(
@@ -2845,6 +2848,7 @@ fn encode_partition_topdown<T: Pixel, W: Writer>(
       }
 
       // FIXME: every final block that has gone through the RDO decision process is encoded twice
+      cw.get_hidden_information_container().start_pre_encoding();
       cdef_coded = encode_block_pre_cdef(
         &fi.sequence,
         ts,
@@ -2854,7 +2858,8 @@ fn encode_partition_topdown<T: Pixel, W: Writer>(
         tile_bo,
         skip,
       );
-      cw.get_hidden_information_container().enable();
+      cw.get_hidden_information_container().stop_pre_encoding();
+      cw.get_hidden_information_container().start_final_encoding();
       encode_block_post_cdef(
         fi,
         ts,
@@ -2877,7 +2882,7 @@ fn encode_partition_topdown<T: Pixel, W: Writer>(
         true,
         true,
       );
-      cw.get_hidden_information_container().disable();
+      cw.get_hidden_information_container().stop_final_encoding();
     }
     PARTITION_SPLIT | PARTITION_HORZ | PARTITION_VERT => {
       if !rdo_output.part_modes.is_empty() {
