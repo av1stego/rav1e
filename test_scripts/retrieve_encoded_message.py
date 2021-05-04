@@ -1,6 +1,7 @@
 import sys
 
 END_LINE = "All data were trasmitted\n"
+SKIPPING_IDENTIFIER = "[Skipping]"
 
 def string_from_bits(bits):
     chars = []
@@ -17,6 +18,9 @@ def retrieve_bits_from_lines(lines):
     for line in lines:
         if line == END_LINE:
             return bits 
+
+        if SKIPPING_IDENTIFIER in line:
+            continue
 
         bit = int(line.split(" ")[8])
         bits.append(bit)

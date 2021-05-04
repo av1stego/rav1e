@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+// use std::fmt::Debug;
+
+static DEFAULT_PADDING: usize = 0;
 
 pub struct HiddenInformationContainer<> {
     pub data: Vec<u8>,
@@ -6,80 +8,51 @@ pub struct HiddenInformationContainer<> {
     pre_encoding: bool,
     booked_byte_index: usize,
     booked_bit_index: usize,
+    booked_skipped_steps: usize,
+    booked_offset: usize,
 
     final_encoding: bool,
     current_byte_index: usize,
     current_bit_index: usize,
-}
 
-impl Default for HiddenInformationContainer {
-    fn default() -> Self {
-        Self {
-            data: vec![],
+    current_padding: usize,
+    padding: usize,
 
-            pre_encoding: false,
-            booked_byte_index: 0,
-            booked_bit_index: 0,
-
-            final_encoding: false,
-
-            current_byte_index: 0,
-            current_bit_index: 0,
-        }
-    }
-}
-
-impl Clone for HiddenInformationContainer {
-    fn clone(&self) -> Self {
-        Self {
-            data: self.data.clone(),
-            pre_encoding: self.pre_encoding,
-            booked_byte_index: self.booked_byte_index,
-            booked_bit_index: self.booked_bit_index,
-            final_encoding: self.final_encoding,
-            current_byte_index: self.current_byte_index,
-            current_bit_index: self.current_bit_index
-        }
-    }
-}
-
-impl Debug for HiddenInformationContainer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}) {:?}", self.current_byte_index, self.data)
-    }
+    current_offset: usize,
+    offset: usize,
 }
 
 impl HiddenInformationContainer {
-    pub fn new(data: Vec<u8>) -> Self {
+    pub fn new(data: Vec<u8>, steps_to_skip: Option<usize>, offset: Option<usize>) -> Self {
         HiddenInformationContainer {
             data: data,
+
             pre_encoding: false,
             booked_byte_index: 0,
             booked_bit_index: 0,
+            booked_skipped_steps: 0,
+            booked_offset: 0,
+
             final_encoding: false,
+
             current_byte_index: 0,
             current_bit_index: 0,
-        }
-    }
 
-    pub fn new_from_str(string: String) -> Self {
-        let mut str_bytes = string.into_bytes();
-        str_bytes.push(0b0);
+            current_padding: 0,
+            padding: steps_to_skip.unwrap_or(DEFAULT_PADDING),
 
-        HiddenInformationContainer {
-            data: str_bytes,
-            pre_encoding: false,
-            booked_byte_index: 0,
-            booked_bit_index: 0,
-            final_encoding: false,
-            current_byte_index: 0,
-            current_bit_index: 0,
+            current_offset: 0,
+            offset: offset.unwrap_or(0)
         }
     }
 
     pub fn start_pre_encoding(&mut self) {
         self.booked_byte_index = self.current_byte_index;
         self.booked_bit_index = self.current_bit_index;
+
+        self.booked_skipped_steps = self.current_padding;
+        self.booked_offset = self.offset;
+
         self.pre_encoding = true;
     }
 
@@ -88,6 +61,9 @@ impl HiddenInformationContainer {
 
         self.current_byte_index = self.booked_byte_index;
         self.current_bit_index = self.booked_bit_index;
+
+        self.current_padding = self.booked_skipped_steps;
+        self.offset = self.booked_offset;
 
         self.pre_encoding = false;
     }
@@ -113,8 +89,8 @@ impl HiddenInformationContainer {
             return angle;
         }
 
-        if angle == 6 {
-            // println!("Angle is 6, skipping space");
+        if self.current_offset < self.offset {
+            self.current_offset += 1;
             return angle;
         }
 
@@ -123,6 +99,24 @@ impl HiddenInformationContainer {
                 println!("All data were trasmitted");
             }
 
+            return angle;
+        }
+
+        if self.current_padding > 0 {
+            if self.final_encoding {
+                println!("[Skipping] Padding, angle: {}", angle);
+            }
+
+            self.current_padding -= 1;
+            return angle;
+        }
+
+        self.current_padding = self.padding;
+
+        if angle == 6 {
+            if self.final_encoding {
+                println!("[Skipping] Angle is 6");
+            }
             return angle;
         }
 

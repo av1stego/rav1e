@@ -33,6 +33,12 @@ pub enum Verbose {
   Verbose,
 }
 
+pub struct HiddenInformationConfig {
+  pub string: String,
+  pub padding: Option<usize>,
+  pub offset: Option<usize>
+}
+
 pub struct CliOptions {
   pub io: EncoderIO,
   pub enc: EncoderConfig,
@@ -47,8 +53,8 @@ pub struct CliOptions {
   pub pass1file_name: Option<String>,
   pub pass2file_name: Option<String>,
   pub save_config: Option<String>,
-  pub hidden_string: Option<String>,
   pub slots: usize,
+  pub hidden_information_config: Option<HiddenInformationConfig>
 }
 
 #[cfg(feature = "serialize")]
@@ -377,6 +383,18 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
         .long("hidden-string")
         .takes_value(true)
     )
+    .arg(
+      Arg::with_name("HIDDEN_BITS_PADDING")
+        .help("Padding between hidden bits")
+        .long("hidden-bits-padding")
+        .takes_value(true)
+    )
+    .arg(
+      Arg::with_name("HIDDEN_BITS_OFFSET")
+        .help("Offset between the first injection-suitable bit and the first hidden bit")
+        .long("hidden-bits-offset")
+        .takes_value(true)
+    )
     .subcommand(SubCommand::with_name("advanced")
                 .setting(AppSettings::Hidden)
                 .about("Advanced features")
@@ -505,8 +523,15 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
     panic!("A limit cannot be set above 1 in still picture mode");
   }
 
-  let hidden_string = matches.value_of("HIDDEN_STRING").map(
-    |string| String::from(string));
+  let hidden_string_config = matches.value_of("HIDDEN_STRING");
+  let hidden_information_config = match hidden_string_config {
+    None => None,
+    Some(hidden_string) => Some(HiddenInformationConfig {
+      string: String::from(hidden_string),
+      padding: matches.value_of("HIDDEN_BITS_PADDING").map(|string| string.parse().unwrap()),
+      offset: matches.value_of("HIDDEN_BITS_OFFSET").map(|string| string.parse().unwrap()),
+    })
+  };
 
   let slots = if cfg!(feature = "unstable") {
     matches.value_of("SLOTS").unwrap().parse().unwrap()
@@ -530,8 +555,8 @@ pub fn parse_cli() -> Result<CliOptions, CliError> {
     pass1file_name: matches.value_of("FIRST_PASS").map(|s| s.to_owned()),
     pass2file_name: matches.value_of("SECOND_PASS").map(|s| s.to_owned()),
     save_config,
-    hidden_string,
     slots,
+    hidden_information_config: hidden_information_config
   })
 }
 
